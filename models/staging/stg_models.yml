@@ -2,53 +2,69 @@ version: 2
 
 models:
   - name: stg_backend_events
-    description: Cleaned backend events, one row per event, with event category and product-usage flag.
+    description: Cleaned backend events, one row per event, with flattened event properties, event category and product-usage flag.
     columns:
       - name: event_id
-        tests: [unique, not_null]
+        data_tests: [unique, not_null]
       - name: user_id
-        tests: [not_null]
+        data_tests: [not_null]
       - name: organization_id
-        tests: [not_null]
+        data_tests: [not_null]
+      - name: user_email
+        description: Only populated on UserCreated events.
+        data_tests:
+          - not_null:
+              config:
+                where: "event_name = 'UserCreated'"
+      - name: search_id
+        description: Populated on Search* events.
+        data_tests:
+          - not_null:
+              config:
+                where: "event_name like 'Search%'"
       - name: event_category
-        tests:
+        data_tests:
           - accepted_values:
-              values: ['authentication', 'account_admin', 'search', 'label', 'other']
+              arguments:
+                values: ['authentication', 'account_admin', 'search', 'label', 'other']
 
   - name: stg_hubspot_companies
     description: Cleaned HubSpot companies. Note that some domains are shared by two company records.
     columns:
       - name: company_id
-        tests: [unique, not_null]
+        data_tests: [unique, not_null]
       - name: domain
-        tests: [not_null]
+        data_tests: [not_null]
 
   - name: stg_hubspot_contacts
     description: Cleaned HubSpot contacts with normalised email.
     columns:
       - name: contact_id
-        tests: [unique, not_null]
+        data_tests: [unique, not_null]
       - name: email
-        tests: [unique, not_null]
+        data_tests: [unique, not_null]
       - name: hubspot_company_id
-        tests:
+        data_tests:
           - not_null
           - relationships:
-              to: ref('stg_hubspot_companies')
-              field: company_id
+              arguments:
+                to: ref('stg_hubspot_companies')
+                field: company_id
 
   - name: stg_hubspot_deals
     description: Cleaned HubSpot deals with a derived deal_status (won / lost / open).
     columns:
       - name: deal_id
-        tests: [unique, not_null]
+        data_tests: [unique, not_null]
       - name: hubspot_company_id
-        tests:
+        data_tests:
           - not_null
           - relationships:
-              to: ref('stg_hubspot_companies')
-              field: company_id
+              arguments:
+                to: ref('stg_hubspot_companies')
+                field: company_id
       - name: deal_status
-        tests:
+        data_tests:
           - accepted_values:
-              values: ['won', 'lost', 'open']
+              arguments:
+                values: ['won', 'lost', 'open']
