@@ -23,12 +23,9 @@ clean-targets:
 
 models:
   flinn_bi_challenge:
-    staging:          # silver (1/2): one cleaned view per source table
+    staging:
       +materialized: view
-      +schema: staging
-    intermediate:     # silver (2/2): joins and business logic
+    intermediate:
       +materialized: view
-      +schema: intermediate
-    marts:            # gold: business-ready tables answering Q1-Q3
+    marts:
       +materialized: table
-      +schema: marts
