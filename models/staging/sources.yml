@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: flinn_raw
+    description: "Raw data imported from the Flinn BI challenge"
+    database: FLINN_DB
+    schema: RAW
+
+    tables:
+      - name: BACKEND_EVENTS
+        description: "Product backend event tracking data"
+
+      - name: HUBSPOT_COMPANIES
+        description: "HubSpot company records"
+
+      - name: HUBSPOT_CONTACTS
+        description: "HubSpot contact records"
+
+      - name: HUBSPOT_DEALS
+        description: "HubSpot sales opportunity records"
