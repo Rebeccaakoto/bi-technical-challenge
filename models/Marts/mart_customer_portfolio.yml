@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: mart_customer_portfolio
+    description: >
+      Company-level customer portfolio with customer status
+      inferred from HubSpot deal history.
+
+    columns:
+      - name: HUBSPOT_COMPANY_ID
+        description: Unique HubSpot company identifier.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: CUSTOMER_STATUS
+        description: Customer status inferred from deal history.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - Active Customer
+                  - Passive Churned
+                  - Churned-Lost
+                  - Open New Business
+                  - Lead
+                  - Needs Review

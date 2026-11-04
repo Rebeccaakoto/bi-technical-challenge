@@ -1,0 +1,105 @@
+version: 2
+
+# Testing approach:
+#   - sources.yml       -> referential integrity of the raw exports (relationships)
+#   - stg_models.yml    -> keys and cleaning logic (unique, not_null, accepted_values)
+#   - marts             -> grain and business logic
+
+models:
+  - name: stg_backend_events
+    description: Cleaned backend events, one row per event, with flattened event properties, event category and product-usage flag.
+    columns:
+      - name: event_id
+        description: Primary key of the event.
+        data_tests: [unique, not_null]
+      - name: user_id
+        data_tests: [not_null]
+      - name: organization_id
+        data_tests: [not_null]
+      - name: event_at
+        data_tests: [not_null]
+      - name: user_email
+        description: Only populated on UserCreated events. Bridge key to HubSpot contacts.
+        data_tests:
+          - not_null:
+              config:
+                where: "event_name = 'UserCreated'"
+      - name: search_id
+        description: Populated on Search* events.
+        data_tests:
+          - not_null:
+              config:
+                where: "event_name like 'Search%'"
+      - name: search_result_id
+        description: Populated on SearchResult* events.
+        data_tests:
+          - not_null:
+              config:
+                where: "event_name like 'SearchResult%'"
+      - name: label_id
+        description: Populated on Label* events.
+        data_tests:
+          - not_null:
+              config:
+                where: "event_name like 'Label%'"
+      - name: event_category
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['authentication', 'account_admin', 'search', 'label', 'other']
+      - name: is_product_usage
+        description: True for deliberate product actions; excludes TokenGenerated and account admin events.
+        data_tests: [not_null]
+
+  - name: stg_hubspot_companies
+    description: Cleaned HubSpot companies. Note that some domains are shared by two company records.
+    columns:
+      - name: company_id
+        description: Primary key of the company.
+        data_tests: [unique, not_null]
+      - name: company_name
+        data_tests: [not_null]
+      - name: domain
+        description: Lowercased and trimmed. Not unique, since some group companies share a domain.
+        data_tests: [not_null]
+
+  - name: stg_hubspot_contacts
+    description: Cleaned HubSpot contacts with normalised email.
+    columns:
+      - name: contact_id
+        description: Primary key of the contact.
+        data_tests: [unique, not_null]
+      - name: email
+        description: Lowercased and trimmed. Bridge key to backend users.
+        data_tests: [unique, not_null]
+      - name: hubspot_company_id
+        data_tests: [not_null]
+      - name: lifecycle_stage
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['lead', 'opportunity', 'customer']
+
+  - name: stg_hubspot_deals
+    description: Cleaned HubSpot deals with a derived deal_status (won / lost / open).
+    columns:
+      - name: deal_id
+        description: Primary key of the deal.
+        data_tests: [unique, not_null]
+      - name: hubspot_company_id
+        data_tests: [not_null]
+      - name: amount
+        data_tests: [not_null]
+      - name: deal_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['won', 'lost', 'open']
+      - name: closed_at
+        description: Null for open deals.
+        data_tests:
+          - not_null:
+              config:
+                where: "deal_status in ('won', 'lost')"
