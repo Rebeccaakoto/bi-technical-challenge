@@ -75,6 +75,17 @@ st.markdown(
 .kpi-value { font-size: 2.1rem; font-weight: 700; line-height: 1.15; margin-top: 6px;
              font-variant-numeric: tabular-nums; }
 .kpi-sub   { font-size: .8rem; opacity: .7; margin-top: 4px; }
+
+/* Print / Save as PDF */
+@media print {
+    @page { size: A4 landscape; margin: 12mm; }
+    [data-testid="stSidebar"], [data-testid="stHeader"], [data-testid="stToolbar"],
+    [data-testid="stDecoration"], [data-testid="stStatusWidget"], header, footer { display: none !important; }
+    .block-container, [data-testid="stMainBlockContainer"] { max-width: 100% !important; padding: 0 !important; }
+    .page-break { break-before: page; page-break-before: always; }
+    .kpi, [data-testid="stVegaLiteChart"], [data-testid="stHorizontalBlock"] { break-inside: avoid; page-break-inside: avoid; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -229,6 +240,13 @@ customer_statuses = st.sidebar.multiselect(
     all_statuses,
     default=[s for s in all_statuses if looks_like_customer(s)] or all_statuses[:1],
     help="Defines Q1. Check the defaults against the CUSTOMER_STATUS logic in the mart.",
+)
+
+print_layout = st.sidebar.toggle(
+    "Print layout",
+    value=False,
+    help="Shows every section on one page, each starting on a new PDF page, so you can save the whole "
+         "dashboard with your browser's Print → Save as PDF.",
 )
 
 if st.sidebar.button("Refresh data"):
@@ -442,9 +460,19 @@ st.info(
     f"{', '.join(customer_statuses) if customer_statuses else '(none selected)'}."
 )
 
-tab_overview, tab_cust, tab_acv, tab_ret, tab_funnel, tab_ttfv = st.tabs(
-    ["Overview", "Customers", "Contract value", "Retention", "Sales funnel", "Time to first value"]
-)
+SECTION_NAMES = ["Overview", "Customers", "Contract value", "Retention", "Sales funnel", "Time to first value"]
+if print_layout:
+    # One long page instead of tabs; each section starts on a new PDF page
+    _sections = []
+    for i, name in enumerate(SECTION_NAMES):
+        box = st.container()
+        if i > 0:
+            box.markdown('<div class="page-break"></div>', unsafe_allow_html=True)
+        box.header(name)
+        _sections.append(box)
+    tab_overview, tab_cust, tab_acv, tab_ret, tab_funnel, tab_ttfv = _sections
+else:
+    tab_overview, tab_cust, tab_acv, tab_ret, tab_funnel, tab_ttfv = st.tabs(SECTION_NAMES)
 
 # ── Overview ─────────────────────────────────────────────────────────────────
 with tab_overview:
